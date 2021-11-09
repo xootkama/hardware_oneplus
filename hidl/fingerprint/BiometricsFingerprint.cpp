@@ -53,6 +53,7 @@ BiometricsFingerprint::BiometricsFingerprint() : mClientCallback(nullptr), mDevi
     if (!mDevice) {
         ALOGE("Can't open HAL module");
     }
+
     mVendorFpService = IVendorFingerprintExtensions::getService();
     mVendorDisplayService = IOneplusDisplay::getService();
 }
@@ -250,19 +251,11 @@ IBiometricsFingerprint* BiometricsFingerprint::getInstance() {
     return sInstance;
 }
 
-const char* BiometricsFingerprint::getModuleId() {
-    int sensor_version = -1;
-    std::ifstream file("/sys/devices/platform/soc/soc:fingerprint_detect/sensor_version");
-    file >> sensor_version;
-    ALOGI("fp sensor version is: 0x%x", sensor_version);
-    return sensor_version == 0x9638 ? "goodix.g6.fod" : "goodix.fod";
-}
-
 fingerprint_device_t* BiometricsFingerprint::openHal() {
     int err;
     const hw_module_t *hw_mdl = nullptr;
     ALOGD("Opening fingerprint hal library...");
-    if (0 != (err = hw_get_module(getModuleId(), &hw_mdl))) {
+    if (0 != (err = hw_get_module("goodix.fod", &hw_mdl))) {
         ALOGE("Can't open fingerprint HW Module, error: %d", err);
         return nullptr;
     }
@@ -287,7 +280,7 @@ fingerprint_device_t* BiometricsFingerprint::openHal() {
     }
 
     if (kVersion != device->version) {
-        // enforce version on new devices because of HIDL@2.3 translation layer
+        // enforce version on new devices because of HIDL@2.1 translation layer
         ALOGE("Wrong fp version. Expected %d, got %d", kVersion, device->version);
         return nullptr;
     }
